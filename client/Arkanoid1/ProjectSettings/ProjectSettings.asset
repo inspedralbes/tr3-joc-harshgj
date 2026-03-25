@@ -98,7 +98,7 @@ PlayerSettings:
   useFlipModelSwapchain: 1
   resizableWindow: 0
   useMacAppStoreValidation: 0
-  macAppStoreCategory: public.app-category.games
+  macAppStoreCategory: client.app-category.games
   gpuSkinning: 0
   meshDeformation: 0
   xboxPIXTextureCapture: 0

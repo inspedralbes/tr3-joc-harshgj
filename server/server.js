@@ -9,7 +9,7 @@ const PORT = 3000;
 // ── Middleware ──────────────────────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'client')));
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'arkanoid-super-secret-key',
@@ -45,12 +45,12 @@ function requireAuth(req, res, next) {
 // Serve login page
 app.get('/', (req, res) => {
   if (req.session.user) return res.redirect('/dashboard');
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+  res.sendFile(path.join(__dirname, 'client', 'login.html'));
 });
 
 app.get('/dashboard', (req, res) => {
   if (!req.session.user) return res.redirect('/');
-  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+  res.sendFile(path.join(__dirname, 'client', 'dashboard.html'));
 });
 
 // ── API: Register ───────────────────────────────────────────────────────────

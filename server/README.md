@@ -10,7 +10,7 @@ auth-server/
 ├── Dockerfile
 ├── docker-compose.yml
 ├── .dockerignore
-└── public/
+└── client/
     ├── login.html     ← Login + Register page
     └── dashboard.html ← Protected page (after login)
 ```

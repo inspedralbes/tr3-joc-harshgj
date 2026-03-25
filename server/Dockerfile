@@ -13,7 +13,7 @@ COPY --from=deps /app/node_modules ./node_modules
 
 # Copy source
 COPY server.js ./
-COPY public ./public
+COPY client ./client
 
 # Non-root user for security
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
