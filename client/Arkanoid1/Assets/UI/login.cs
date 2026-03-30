@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.Networking;
 using System.Collections;
+using System.Text;
+using System;
 
 public class LoginUI : MonoBehaviour
 {
@@ -24,8 +26,8 @@ public class LoginUI : MonoBehaviour
 
     private void OnLoginClicked()
     {
-        string username = usernameField.value;
-        string password = passwordField.value;
+        string username = usernameField.value.Trim();
+        string password = passwordField.value.Trim();
 
         if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
         {
@@ -46,7 +48,6 @@ public class LoginUI : MonoBehaviour
 
         using (UnityWebRequest request = UnityWebRequest.Post(url, form))
         {
-            // Important for sessions/cookies
             request.SetRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
             yield return request.SendWebRequest();
@@ -57,24 +58,50 @@ public class LoginUI : MonoBehaviour
             if (request.isNetworkError || request.isHttpError)
 #endif
             {
-                statusLabel.text = "Error: " + request.error;
+                statusLabel.text = "Network Error: " + request.error;
             }
             else
             {
                 string response = request.downloadHandler.text;
                 Debug.Log("Server response: " + response);
-                
-                // Example: check if login was successful
-                if (response.Contains("Login successful"))
+
+                try
                 {
-                    statusLabel.text = "Login successful!";
-                    // TODO: Load next scene or dashboard
+                    // Parse JSON response
+                    var json = JsonUtility.FromJson<LoginResponse>(response);
+
+                    if (!string.IsNullOrEmpty(json.message) && json.message.ToLower().Contains("login successful"))
+                    {
+                        statusLabel.text = "Login successful!";
+
+                        // Save username to PlayerPrefs for later (e.g., WebSocket connection)
+                        PlayerPrefs.SetString("username", username);
+
+                        // TODO: Load next scene or dashboard
+                        // UnityEngine.SceneManagement.SceneManager.LoadScene("Dashboard");
+                    }
+                    else if (!string.IsNullOrEmpty(json.error))
+                    {
+                        statusLabel.text = json.error;
+                    }
+                    else
+                    {
+                        statusLabel.text = "Unknown server response";
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    statusLabel.text = "Invalid username or password";
+                    statusLabel.text = "JSON parse error: " + ex.Message;
                 }
             }
         }
+    }
+
+    [Serializable]
+    private class LoginResponse
+    {
+        public string message;
+        public string error;
+        public string username;
     }
 }

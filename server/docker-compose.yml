@@ -7,11 +7,33 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=production
-      - SESSION_SECRET=change-this-to-a-long-random-string
+      NODE_ENV: production
+      SESSION_SECRET: change-this-to-a-long-random-string
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: authdb
+      DB_USER: root
+      DB_PASS: password
+    depends_on:
+      - mysql
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/me"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/me || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
+
+  mysql:
+    image: mysql:8.0
+    container_name: auth-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: authdb
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:90pñ
