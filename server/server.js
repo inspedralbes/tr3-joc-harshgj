@@ -1,10 +1,13 @@
 // server.js
+require('dotenv').config();
+
 const express = require('express');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
-const path = require('path');
+const cors = require('cors');
 const http = require('http');
 const WebSocket = require('ws');
+
 const { Sequelize, DataTypes } = require('sequelize');
 
 // ── Database setup ─────────────────────────
@@ -14,83 +17,95 @@ const sequelize = new Sequelize(
   process.env.DB_USER || 'root',
   process.env.DB_PASS || 'password',
   {
-    host: process.env.DB_HOST || 'mysql', // <-- use service name in Docker
-    port: process.env.DB_PORT || 3306,
+    host: process.env.DB_HOST || 'mysql', // use 'mysql' for Docker
+    port: parseInt(process.env.DB_PORT) || 3306,
     dialect: 'mysql',
-    logging: false
+    logging: false,
   }
 );
 
 // User model
-const User = sequelize.define('User', {
-  username: { type: DataTypes.STRING, unique: true, allowNull: false },
-  password_hash: { type: DataTypes.STRING, allowNull: false }
-});
+const User = sequelize.define(
+  'User',
+  {
+    username: { type: DataTypes.STRING, unique: true, allowNull: false },
+    password_hash: { type: DataTypes.STRING, allowNull: false },
+    created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+  },
+  { tableName: 'users', timestamps: false }
+);
 
 // ── Express setup ─────────────────────────
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(cors({ origin: '*', credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'client')));
 
 const sessionParser = session({
   secret: process.env.SESSION_SECRET || 'super-secret-key',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 * 2 }
+  cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 * 2 },
 });
+
 app.use(sessionParser);
 
-// ── Initialize DB ─────────────────────────
-(async () => {
-  try {
-    await sequelize.authenticate();
-    console.log('✅ DB connected');
-    await sequelize.sync();
-
-    // Create demo admin
-    const admin = await User.findOne({ where: { username: 'admin' } });
-    if (!admin) {
-      const passwordHash = await bcrypt.hash('password123', 10);
-      await User.create({ username: 'admin', password_hash: passwordHash });
-      console.log('✅ Demo admin created: admin / password123');
+// ── Database init with retry ──────────────
+async function connectWithRetry() {
+  let retries = 10;
+  while (retries) {
+    try {
+      await sequelize.authenticate();
+      console.log('✅ Database connected');
+      await sequelize.sync();
+      // Create default admin if missing
+      const admin = await User.findOne({ where: { username: 'admin' } });
+      if (!admin) {
+        const hash = await bcrypt.hash('password123', 10);
+        await User.create({ username: 'admin', password_hash: hash });
+        console.log('✅ Default admin: admin / password123');
+      }
+      return;
+    } catch (err) {
+      console.log('⏳ Waiting for MySQL to be ready...');
+      retries--;
+      await new Promise((res) => setTimeout(res, 3000));
     }
-  } catch (err) {
-    console.error('❌ DB connection failed:', err);
   }
-})();
+  console.error('❌ Could not connect to DB after retries');
+  process.exit(1);
+}
+
+connectWithRetry();
 
 // ── Auth middleware ───────────────────────
 function requireAuth(req, res, next) {
   if (req.session?.user) return next();
-  res.status(401).json({ error: 'Not authenticated' });
+  return res.status(401).json({ error: 'Not authenticated' });
 }
 
 // ── Routes ────────────────────────────────
-app.get('/', (req, res) => {
-  if (req.session.user) return res.redirect('/dashboard');
-  res.sendFile(path.join(__dirname, 'client', 'login.html'));
-});
-
-app.get('/dashboard', requireAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, 'client', 'dashboard.html'));
-});
 
 // Register
 app.post('/api/register', async (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
-
-  if (username.length < 3) return res.status(400).json({ error: 'Username must be at least 3 chars' });
-  if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 chars' });
+  if (!username || !password)
+    return res.status(400).json({ error: 'Missing fields' });
+  if (username.length < 3)
+    return res.status(400).json({ error: 'Username too short' });
+  if (password.length < 6)
+    return res.status(400).json({ error: 'Password too short' });
 
   try {
-    if (await User.findOne({ where: { username } })) return res.status(409).json({ error: 'Username taken' });
-    const passwordHash = await bcrypt.hash(password, 10);
-    await User.create({ username, password_hash: passwordHash });
-    res.json({ message: 'Account created successfully!' });
+    const exists = await User.findOne({ where: { username } });
+    if (exists) return res.status(409).json({ error: 'User already exists' });
+
+    const hash = await bcrypt.hash(password, 10);
+    await User.create({ username, password_hash: hash });
+
+    res.json({ message: 'User registered' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -100,14 +115,15 @@ app.post('/api/register', async (req, res) => {
 // Login
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
+  if (!username || !password)
+    return res.status(400).json({ error: 'Missing credentials' });
 
   try {
     const user = await User.findOne({ where: { username } });
-    if (!user) return res.status(401).json({ error: 'Invalid username or password' });
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
     const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) return res.status(401).json({ error: 'Invalid username or password' });
+    if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
 
     req.session.user = { username: user.username, loginAt: new Date().toISOString() };
     res.json({ message: 'Login successful', username: user.username });
@@ -119,17 +135,15 @@ app.post('/api/login', async (req, res) => {
 
 // Logout
 app.post('/api/logout', (req, res) => {
-  const username = req.session.user?.username;
-  req.session.destroy(err => {
-    if (err) return res.status(500).json({ error: 'Logout failed' });
+  req.session.destroy(() => {
     res.clearCookie('connect.sid');
-    res.json({ message: 'Logged out successfully' });
+    res.json({ message: 'Logged out' });
   });
 });
 
 // Current user
 app.get('/api/me', requireAuth, (req, res) => {
-  res.json({ username: req.session.user.username, loginAt: req.session.user.loginAt });
+  res.json(req.session.user);
 });
 
 // ── WebSocket ────────────────────────────
@@ -137,17 +151,22 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ noServer: true });
 const rooms = {};
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+  const user = req.session.user;
+
   ws.on('message', (msg) => {
     const data = JSON.parse(msg);
+
     if (data.type === 'join') {
       const room = data.room || 'default';
       ws.room = room;
       if (!rooms[room]) rooms[room] = [];
       rooms[room].push(ws);
+      console.log(`👤 ${user.username} joined ${room}`);
     }
+
     if (data.type === 'move' && ws.room) {
-      rooms[ws.room].forEach(client => {
+      rooms[ws.room].forEach((client) => {
         if (client !== ws && client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({ type: 'move', payload: data.payload }));
         }
@@ -157,12 +176,12 @@ wss.on('connection', (ws) => {
 
   ws.on('close', () => {
     if (ws.room && rooms[ws.room]) {
-      rooms[ws.room] = rooms[ws.room].filter(c => c !== ws);
+      rooms[ws.room] = rooms[ws.room].filter((c) => c !== ws);
     }
   });
 });
 
-// Upgrade HTTP to WebSocket
+// Session auth for WebSocket
 server.on('upgrade', (req, socket, head) => {
   sessionParser(req, {}, () => {
     if (!req.session.user) return socket.destroy();
@@ -170,7 +189,7 @@ server.on('upgrade', (req, socket, head) => {
   });
 });
 
-// Start server
+// ── Start Server ─────────────────────────
 server.listen(PORT, () => {
-  console.log(`✅ Server running at http://localhost:${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

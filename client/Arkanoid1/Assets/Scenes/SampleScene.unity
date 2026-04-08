@@ -129,7 +129,7 @@ GameObject:
   m_Component:
   - component: {fileID: 176422224}
   - component: {fileID: 176422223}
-  - component: {fileID: 176422222}
+  - component: {fileID: 176422225}
   m_Layer: 0
   m_Name: Login
   m_TagString: Untagged
@@ -137,18 +137,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &176422222
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 176422221}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 65dabed6b4764f7468f591bee5fa8894, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::LoginUI
 --- !u!114 &176422223
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -161,9 +149,9 @@ MonoBehaviour:
   m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
-  m_PanelSettings: {fileID: 11400000, guid: 9cadf181ccc3740489b5cfa62cca79c0, type: 2}
+  m_PanelSettings: {fileID: 11400000, guid: a4a412df47a93354facb3a401285a528, type: 2}
   m_ParentUI: {fileID: 0}
-  sourceAsset: {fileID: 9197481963319205126, guid: 46e92516f5ed6b843a5c6e65d33a876b, type: 3}
+  sourceAsset: {fileID: 9197481963319205126, guid: c38e52030e9ac974b936250be38871eb, type: 3}
   m_SortingOrder: 0
   m_Position: 0
   m_WorldSpaceSizeMode: 1
@@ -187,6 +175,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &176422225
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 176422221}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af8ff00cd00009247910ed392f3c4eef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LoginUI
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
