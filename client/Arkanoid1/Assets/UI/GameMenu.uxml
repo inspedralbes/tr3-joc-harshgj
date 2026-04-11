@@ -1,0 +1,23 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="menuContainer" class="container">
+        <ui:VisualElement name="mainMenuPanel" class="panel">
+            <ui:Label name="titleLabel" text="Arcade Control Room" class="title" />
+            <ui:Label name="subtitleLabel" text="Choose how you want to play the next match." class="subtitle" />
+            <ui:Button name="soloPlayButton" text="Play Solo" class="primaryButton" />
+            <ui:Button name="partnerPlayButton" text="Play with Partner" class="primaryButton" />
+            <ui:Button name="aiPlayButton" text="Play with AI" class="primaryButton" />
+            <ui:Button name="backButton" text="Back To Login" class="secondaryButton" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="partnerLobbyPanel" class="panel hiddenPanel">
+            <ui:Label text="Partner Lobby" class="title" />
+            <ui:Label name="partnerSubtitleLabel" text="Create a room or join with a room code from another account." class="subtitle" />
+            <ui:Button name="createRoomButton" text="Create Room" class="primaryButton" />
+            <ui:Label name="roomCodeLabel" text="Room code: -" class="roomCodeLabel" />
+            <ui:TextField name="roomCodeField" label="Room Code" class="roomCodeField" />
+            <ui:Button name="joinRoomButton" text="Join Room" class="primaryButton" />
+            <ui:Label name="partnerStatusLabel" text="Waiting for room action." class="statusLabel" />
+            <ui:Button name="partnerBackButton" text="Back To Modes" class="secondaryButton" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

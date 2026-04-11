@@ -1,67 +1,82 @@
-using UnityEngine;
-using UnityEngine.UIElements;
 using System.Collections;
-using UnityEngine.Networking;
 using System.Text;
+using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
 
 public class LoginController : MonoBehaviour
 {
+    [System.Serializable]
+    class LoginResponse
+    {
+        public string message;
+        public string username;
+        public string sessionCookie;
+        public string error;
+    }
+
+    private const string PostLoginSceneName = "GameMenu";
+
     private TextField usernameField;
     private TextField passwordField;
     private Button loginButton;
     private Label statusLabel;
 
-    private string serverUrl = "http://localhost:3000/api/login";
-
     void Start()
     {
-        var root = GetComponent<UIDocument>().rootVisualElement;
+        VisualElement root = GetComponent<UIDocument>().rootVisualElement;
 
         usernameField = root.Q<TextField>("usernameField");
         passwordField = root.Q<TextField>("passwordField");
         loginButton = root.Q<Button>("loginButton");
         statusLabel = root.Q<Label>("statusLabel");
 
-        loginButton.clicked += OnLoginClicked;
+        if (loginButton != null)
+            loginButton.clicked += OnLoginClicked;
     }
 
     void OnLoginClicked()
     {
-        StartCoroutine(LoginRequest(
-            usernameField.value,
-            passwordField.value
-        ));
+        StartCoroutine(LoginRequest(usernameField.value, passwordField.value));
     }
 
     IEnumerator LoginRequest(string username, string password)
     {
-        var json = JsonUtility.ToJson(new LoginData(username, password));
+        string json = JsonUtility.ToJson(new LoginData(username, password));
 
-        UnityWebRequest req = new UnityWebRequest(serverUrl, "POST");
+        UnityWebRequest request = new UnityWebRequest(SessionState.LoginUrl, "POST");
         byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
 
-        req.uploadHandler = new UploadHandlerRaw(bodyRaw);
-        req.downloadHandler = new DownloadHandlerBuffer();
-        req.SetRequestHeader("Content-Type", "application/json");
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
 
-        yield return req.SendWebRequest();
+        yield return request.SendWebRequest();
 
-        if (req.result == UnityWebRequest.Result.Success)
+        if (request.result != UnityWebRequest.Result.Success)
         {
-            var response = req.downloadHandler.text;
-
-            if (response.Contains("Login successful"))
-            {
-                statusLabel.text = "✅ Login success!";
-                yield return new WaitForSeconds(1f);
-                SceneManager.LoadScene("0");
-            }
-            else
-            {
-                statusLabel.text = "❌ " + response;
-            }
+            statusLabel.text = "Login failed";
+            yield break;
         }
+
+        LoginResponse response = JsonUtility.FromJson<LoginResponse>(request.downloadHandler.text);
+        if (response == null || response.message != "Login successful")
+        {
+            statusLabel.text = response != null && !string.IsNullOrWhiteSpace(response.error)
+                ? response.error
+                : "Login failed";
+            yield break;
+        }
+
+        string sessionCookie = !string.IsNullOrWhiteSpace(response.sessionCookie)
+            ? response.sessionCookie
+            : request.GetResponseHeader("Set-Cookie");
+
+        SessionState.StoreLoginSession(response.username, sessionCookie);
+        statusLabel.text = "Login success";
+        yield return new WaitForSeconds(1f);
+        SceneManager.LoadScene(PostLoginSceneName);
     }
 
     [System.Serializable]
@@ -70,10 +85,10 @@ public class LoginController : MonoBehaviour
         public string username;
         public string password;
 
-        public LoginData(string u, string p)
+        public LoginData(string user, string pass)
         {
-            username = u;
-            password = p;
+            username = user;
+            password = pass;
         }
     }
 }

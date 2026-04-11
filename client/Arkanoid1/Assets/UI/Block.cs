@@ -2,11 +2,21 @@ using UnityEngine;
 
 public class Block : MonoBehaviour
 {
+    private bool isDestroyed;
+
     void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.gameObject.CompareTag("Ball"))
+        if (isDestroyed || !collision.gameObject.CompareTag("Ball"))
+            return;
+
+        isDestroyed = true;
+
+        GameManager manager = FindFirstObjectByType<GameManager>();
+        if (manager != null)
         {
-            Destroy(gameObject);
+            manager.NotifyBlockDestroyed();
         }
+
+        Destroy(gameObject);
     }
 }

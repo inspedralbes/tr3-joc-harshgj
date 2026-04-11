@@ -2,87 +2,109 @@ using UnityEngine;
 
 public class Ball : MonoBehaviour
 {
+    [Header("Movement")]
     public float speed = 8f;
-    private Rigidbody2D rb;
-    private bool launched = false;
+    public float paddleBounceHeight = 1f;
+    public float horizontalBounceStrength = 0.9f;
 
-    // Store screen bounds for manual clamping backup
-    private float minX, maxX, maxY;
+    private Rigidbody2D rb;
+    private CircleCollider2D circleCollider;
+    private BoxCollider2D extraBoxCollider;
+    private PhysicsMaterial2D bounceMaterial;
+
+    void Awake()
+    {
+        rb = GetComponent<Rigidbody2D>();
+        circleCollider = GetComponent<CircleCollider2D>();
+        extraBoxCollider = GetComponent<BoxCollider2D>();
+
+        if (rb == null)
+        {
+            Debug.LogError("Ball needs a Rigidbody2D component.");
+            enabled = false;
+            return;
+        }
+
+        ConfigurePhysics();
+    }
 
     void Start()
     {
-        rb = GetComponent<Rigidbody2D>();
-        rb.gravityScale = 0f;
-        rb.linearVelocity = Vector2.zero;
-        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-
-        // Calculate screen bounds
-        Camera cam = Camera.main;
-        float height = cam.orthographicSize;
-        float width = height * cam.aspect;
-        minX = -width;
-        maxX = width;
-        maxY = height;
+        ResetBall(transform.position);
+        Launch();
     }
 
-    void Update()
+    void ConfigurePhysics()
     {
-        // Press Space to launch
-        if (!launched && Input.GetKeyDown(KeyCode.Space))
+        rb.gravityScale = 0f;
+        rb.linearDamping = 0f;
+        rb.angularDamping = 0f;
+        rb.freezeRotation = true;
+        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+        rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+
+        bounceMaterial = new PhysicsMaterial2D("BallBounce")
         {
-            launched = true;
-            float randomX = Random.Range(-0.4f, 0.4f);
-            rb.linearVelocity = new Vector2(randomX, 1f).normalized * speed;
+            bounciness = 1f,
+            friction = 0f
+        };
+
+        if (circleCollider != null)
+            circleCollider.sharedMaterial = bounceMaterial;
+
+        if (extraBoxCollider != null)
+            extraBoxCollider.enabled = false;
+    }
+
+    void FixedUpdate()
+    {
+        if (rb.linearVelocity.sqrMagnitude <= 0.001f)
+        {
+            Launch();
+            return;
         }
 
-        // Keep constant speed
-        if (launched && rb.linearVelocity.magnitude < speed * 0.95f)
-        {
-            rb.linearVelocity = rb.linearVelocity.normalized * speed;
-        }
-
-        // Safety clamp — in case ball somehow clips through a wall
-        Vector3 pos = transform.position;
-        float r = transform.localScale.x / 2f;
-
-        if (pos.x - r < minX)
-        {
-            transform.position = new Vector3(minX + r, pos.y, 0);
-            rb.linearVelocity = new Vector2(Mathf.Abs(rb.linearVelocity.x), rb.linearVelocity.y);
-        }
-        else if (pos.x + r > maxX)
-        {
-            transform.position = new Vector3(maxX - r, pos.y, 0);
-            rb.linearVelocity = new Vector2(-Mathf.Abs(rb.linearVelocity.x), rb.linearVelocity.y);
-        }
-
-        if (pos.y + r > maxY)
-        {
-            transform.position = new Vector3(pos.x, maxY - r, 0);
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, -Mathf.Abs(rb.linearVelocity.y));
-        }
+        rb.linearVelocity = rb.linearVelocity.normalized * speed;
     }
 
     void OnCollisionEnter2D(Collision2D collision)
     {
         if (collision.gameObject.CompareTag("Paddle"))
-        {
-            // Left side hit = go left, right side hit = go right
-            float hitFactor = (transform.position.x - collision.transform.position.x)
-                              / (collision.collider.bounds.size.x / 2f);
+            BounceFromPaddle(collision);
+    }
 
-            hitFactor = Mathf.Clamp(hitFactor, -0.85f, 0.85f);
+    void OnCollisionStay2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Paddle") && rb.linearVelocity.y <= 0f)
+            BounceFromPaddle(collision);
+    }
 
-            Vector2 dir = new Vector2(hitFactor, 1f).normalized;
-            rb.linearVelocity = dir * speed;
-        }
+    void BounceFromPaddle(Collision2D collision)
+    {
+        float paddleHalfWidth = collision.collider.bounds.extents.x;
+        float hitOffset = transform.position.x - collision.transform.position.x;
+        float normalizedOffset = paddleHalfWidth > 0f ? hitOffset / paddleHalfWidth : 0f;
+        normalizedOffset = Mathf.Clamp(normalizedOffset, -1f, 1f);
+
+        Vector2 direction = new Vector2(normalizedOffset * horizontalBounceStrength, paddleBounceHeight).normalized;
+
+        rb.position += Vector2.up * 0.08f;
+        rb.linearVelocity = direction * speed;
     }
 
     public void ResetBall(Vector3 startPos)
     {
-        launched = false;
         transform.position = startPos;
         rb.linearVelocity = Vector2.zero;
         rb.angularVelocity = 0f;
+        rb.gravityScale = 0f;
+        rb.simulated = true;
+    }
+
+    public void Launch()
+    {
+        float horizontal = Random.Range(-0.6f, 0.6f);
+        Vector2 direction = new Vector2(horizontal, 1f).normalized;
+        rb.linearVelocity = direction * speed;
     }
 }

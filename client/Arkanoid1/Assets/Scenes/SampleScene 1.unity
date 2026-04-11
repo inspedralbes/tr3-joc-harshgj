@@ -147,10 +147,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 4630617}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a1ff706149d72c4b8efa3ea61a33d93, type: 3}
+  m_Script: {fileID: 11500000, guid: 36aa9b5827fd1af4085bd7f290f2b59e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DeathZone
-  gameManager: {fileID: 0}
+  gameManager: {fileID: 2143156373}
 --- !u!212 &4630619
 SpriteRenderer:
   serializedVersion: 2
@@ -234,10 +234,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 4630617}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8b7981d4c5aa725499ca318160e4af55, type: 3}
+  m_Script: {fileID: 11500000, guid: c0555a8244a44ad43b69667cf7c6cbc2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BorderManager
-  wallThickness: 0.5
+  lives: 4
+  livesText: {fileID: 2122919043}
+  gameOverUI: {fileID: 2122919041}
+  ballObject: {fileID: 1604547837}
+  ballStart: {fileID: 1604547841}
+  paddleObject: {fileID: 498093236}
+  paddleStart: {fileID: 498093240}
 --- !u!1 &43292293
 GameObject:
   m_ObjectHideFlags: 0
@@ -440,7 +446,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 167035657}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8b7981d4c5aa725499ca318160e4af55, type: 3}
+  m_Script: {fileID: 11500000, guid: d22fc6600e58a7d4b90eb6cc43a021ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BorderManager
   wallThickness: 0.5
@@ -472,7 +478,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 247537016}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 111cbc4166cd22441866a5bf15607f28, type: 3}
+  m_Script: {fileID: 11500000, guid: 3bdb633dd3b99c84ebecc916a92fa9ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Block
 --- !u!61 &247537018
@@ -623,7 +629,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 422165773}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 111cbc4166cd22441866a5bf15607f28, type: 3}
+  m_Script: {fileID: 11500000, guid: 3bdb633dd3b99c84ebecc916a92fa9ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Block
 --- !u!61 &422165775
@@ -922,7 +928,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 498093236}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2ba14f3ff70785e46b6e951622cdedd1, type: 3}
+  m_Script: {fileID: 11500000, guid: 18e58dfa8142fdb4dbacf681622eb662, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PaddleMovement
   speed: 10
@@ -1093,7 +1099,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 581902112}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 111cbc4166cd22441866a5bf15607f28, type: 3}
+  m_Script: {fileID: 11500000, guid: 3bdb633dd3b99c84ebecc916a92fa9ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Block
 --- !u!61 &581902114
@@ -1448,7 +1454,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 625665452}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 111cbc4166cd22441866a5bf15607f28, type: 3}
+  m_Script: {fileID: 11500000, guid: 3bdb633dd3b99c84ebecc916a92fa9ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Block
 --- !u!1 &944146049
@@ -1479,7 +1485,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 944146049}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 111cbc4166cd22441866a5bf15607f28, type: 3}
+  m_Script: {fileID: 11500000, guid: 3bdb633dd3b99c84ebecc916a92fa9ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Block
 --- !u!61 &944146051
@@ -1827,7 +1833,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1051597714}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8b7981d4c5aa725499ca318160e4af55, type: 3}
+  m_Script: {fileID: 11500000, guid: d22fc6600e58a7d4b90eb6cc43a021ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BorderManager
   wallThickness: 0.5
@@ -1859,7 +1865,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1508768650}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 111cbc4166cd22441866a5bf15607f28, type: 3}
+  m_Script: {fileID: 11500000, guid: 3bdb633dd3b99c84ebecc916a92fa9ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Block
 --- !u!61 &1508768652
@@ -2148,10 +2154,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 1604547837}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9ae648a72ccdad949b035d7fa20e2c8c, type: 3}
+  m_Script: {fileID: 11500000, guid: 1d51f2205b612a748a12dbe2b9fbb688, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Ball
   speed: 8
+  paddleBounceHeight: 1
+  horizontalBounceStrength: 0.9
 --- !u!1 &1604734973
 GameObject:
   m_ObjectHideFlags: 0
@@ -2180,7 +2188,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1604734973}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 111cbc4166cd22441866a5bf15607f28, type: 3}
+  m_Script: {fileID: 11500000, guid: 3bdb633dd3b99c84ebecc916a92fa9ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Block
 --- !u!61 &1604734975
@@ -2331,7 +2339,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1847540748}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 111cbc4166cd22441866a5bf15607f28, type: 3}
+  m_Script: {fileID: 11500000, guid: 3bdb633dd3b99c84ebecc916a92fa9ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Block
 --- !u!61 &1847540750
@@ -2482,7 +2490,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1948114388}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 111cbc4166cd22441866a5bf15607f28, type: 3}
+  m_Script: {fileID: 11500000, guid: 3bdb633dd3b99c84ebecc916a92fa9ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Block
 --- !u!61 &1948114390
@@ -2633,7 +2641,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1983520685}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 111cbc4166cd22441866a5bf15607f28, type: 3}
+  m_Script: {fileID: 11500000, guid: 3bdb633dd3b99c84ebecc916a92fa9ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Block
 --- !u!61 &1983520687
@@ -2749,7 +2757,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1983520685}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -0.18, y: 2.06, z: 0}
   m_LocalScale: {x: -2.3884597, y: 0.9902068, z: 1}
   m_ConstrainProportionsScale: 0
@@ -2879,7 +2887,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 2048810954}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8b7981d4c5aa725499ca318160e4af55, type: 3}
+  m_Script: {fileID: 11500000, guid: d22fc6600e58a7d4b90eb6cc43a021ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BorderManager
   wallThickness: 0.5
@@ -3046,13 +3054,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 2143156372}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48e96b63db5818749a52132ca9524023, type: 3}
+  m_Script: {fileID: 11500000, guid: c0555a8244a44ad43b69667cf7c6cbc2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   lives: 4
-  livesText: {fileID: 0}
-  ballObject: {fileID: 0}
-  ballStart: {fileID: 0}
+  livesText: {fileID: 2122919043}
+  gameOverUI: {fileID: 2122919041}
+  ballObject: {fileID: 1604547837}
+  ballStart: {fileID: 1604547841}
+  paddleObject: {fileID: 498093236}
+  paddleStart: {fileID: 498093240}
 --- !u!4 &2143156374
 Transform:
   m_ObjectHideFlags: 0
