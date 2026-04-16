@@ -1471,7 +1471,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1501}
   - component: {fileID: 1503}
-  - component: {fileID: 1504}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -1542,25 +1541,6 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
---- !u!114 &1504
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1500}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c0555a8244a44ad43b69667cf7c6cbc2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  lives: 3
-  livesText: {fileID: 1573470794}
-  gameOverUI: {fileID: 0}
-  ballObject: {fileID: 28718880}
-  ballStart: {fileID: 28718885}
-  paddleObject: {fileID: 300}
-  paddleStart: {fileID: 301}
 --- !u!1 &1509
 GameObject:
   m_ObjectHideFlags: 0
@@ -1570,7 +1550,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1502}
-  - component: {fileID: 1510}
   m_Layer: 5
   m_Name: LivesText
   m_TagString: Untagged
@@ -1578,25 +1557,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1510
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1509}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c0555a8244a44ad43b69667cf7c6cbc2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  lives: 3
-  livesText: {fileID: 1573470794}
-  gameOverUI: {fileID: 0}
-  ballObject: {fileID: 28718880}
-  ballStart: {fileID: 28718885}
-  paddleObject: {fileID: 300}
-  paddleStart: {fileID: 301}
 --- !u!1 &2001
 GameObject:
   m_ObjectHideFlags: 0

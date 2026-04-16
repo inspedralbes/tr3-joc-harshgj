@@ -9,6 +9,7 @@ public static class SessionState
     public static string RoomRole { get; set; }
 
     public static string LoginUrl => HttpBaseUrl + "/api/login";
+    public static string RegisterUrl => HttpBaseUrl + "/api/register";
     public static string CreateRoomUrl => HttpBaseUrl + "/api/rooms";
     public static string JoinRoomUrl => HttpBaseUrl + "/api/rooms/join";
 

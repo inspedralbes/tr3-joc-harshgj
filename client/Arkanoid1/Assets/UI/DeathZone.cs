@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class DeathZone : MonoBehaviour
 {
@@ -27,7 +28,15 @@ public class DeathZone : MonoBehaviour
             return;
 
         ballHandled = true;
-        gameManager.LoseLife();
+        gameManager.NotifyTrainingBallLost();
+
+        if (!IsTrainingScene())
+            gameManager.LoseLife();
+    }
+
+    bool IsTrainingScene()
+    {
+        return SceneManager.GetActiveScene().name == "TrainingScene";
     }
 
     void LateUpdate()

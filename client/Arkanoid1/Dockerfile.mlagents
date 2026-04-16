@@ -1,0 +1,31 @@
+FROM python:3.8-slim
+
+WORKDIR /workspace
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --upgrade pip setuptools wheel
+
+RUN pip install \
+    numpy==1.21.6 \
+    grpcio==1.48.2 \
+    h5py==3.10.0 \
+    cloudpickle==3.0.0 \
+    pyyaml==6.0.1 \
+    tensorboard==2.14.0 \
+    protobuf==3.20.3 \
+    attrs==23.1.0 \
+    cattrs==1.5.0
+
+RUN pip install mlagents-envs==0.28.0 --no-deps
+
+RUN pip install torch==1.8.0+cpu torchvision==0.9.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+
+RUN pip install mlagents==0.28.0 --no-deps
+
+COPY config/ /workspace/config/
+
+CMD ["mlagents-learn", "config/mlagent.yaml", "--run-id=Arkanoid", "--base-port=5004"]

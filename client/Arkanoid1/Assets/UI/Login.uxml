@@ -17,8 +17,12 @@
         <!-- Password input -->
         <ui:TextField name="passwordField" label="Password" password="true" />
 
-        <!-- Login button -->
         <ui:Button name="loginButton" text="Login" />
+
+        <ui:VisualElement class="registerRow">
+            <ui:Label text="New user?" class="registerPrompt" />
+            <ui:Button name="registerButton" text="Register here" class="registerButton" />
+        </ui:VisualElement>
 
         <!-- Status label -->
         <ui:Label name="statusLabel" text="" class="status" />

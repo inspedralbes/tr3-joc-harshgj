@@ -10,13 +10,21 @@ public class Block : MonoBehaviour
             return;
 
         isDestroyed = true;
+        GetComponent<Collider2D>().enabled = false;
+        gameObject.SetActive(false);
 
         GameManager manager = FindFirstObjectByType<GameManager>();
-        if (manager != null)
-        {
-            manager.NotifyBlockDestroyed();
-        }
+        ArkanoidAgent agent = FindFirstObjectByType<ArkanoidAgent>();
 
-        Destroy(gameObject);
+        if (manager != null)
+            manager.NotifyBlockDestroyed();
+
+        if (agent != null)
+            agent.NotifyBlockBroken();
+    }
+
+    public void ResetBlock()
+    {
+        isDestroyed = false;
     }
 }

@@ -17,10 +17,12 @@ public class LoginController : MonoBehaviour
     }
 
     private const string PostLoginSceneName = "GameMenu";
+    private const string RegisterSceneName = "Register";
 
     private TextField usernameField;
     private TextField passwordField;
     private Button loginButton;
+    private Button registerButton;
     private Label statusLabel;
 
     void Start()
@@ -30,15 +32,54 @@ public class LoginController : MonoBehaviour
         usernameField = root.Q<TextField>("usernameField");
         passwordField = root.Q<TextField>("passwordField");
         loginButton = root.Q<Button>("loginButton");
+        registerButton = root.Q<Button>("registerButton");
         statusLabel = root.Q<Label>("statusLabel");
 
         if (loginButton != null)
             loginButton.clicked += OnLoginClicked;
+
+        if (registerButton != null)
+            registerButton.clicked += OnRegisterClicked;
     }
 
     void OnLoginClicked()
     {
+        if (!ValidateCredentials())
+            return;
+
         StartCoroutine(LoginRequest(usernameField.value, passwordField.value));
+    }
+
+    void OnRegisterClicked()
+    {
+        SceneManager.LoadScene(RegisterSceneName);
+    }
+
+    bool ValidateCredentials()
+    {
+        string username = usernameField != null ? usernameField.value.Trim() : string.Empty;
+        string password = passwordField != null ? passwordField.value : string.Empty;
+
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+        {
+            statusLabel.text = "Username and password are required";
+            return false;
+        }
+
+        if (username.Length < 3)
+        {
+            statusLabel.text = "Username must have at least 3 characters";
+            return false;
+        }
+
+        if (password.Length < 6)
+        {
+            statusLabel.text = "Password must have at least 6 characters";
+            return false;
+        }
+
+        statusLabel.text = string.Empty;
+        return true;
     }
 
     IEnumerator LoginRequest(string username, string password)

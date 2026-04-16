@@ -1,0 +1,26 @@
+.container {
+    width: 360px;
+    padding: 24px;
+    margin: 50px auto;
+    flex-direction: column;
+    border: 2px solid #333;
+    border-radius: 10px;
+    background-color: #f0f0f0;
+}
+
+.title {
+    font-size: 26px;
+    margin-bottom: 15px;
+    unity-text-align: middle-center;
+}
+
+.backButton {
+    margin-top: 10px;
+}
+
+.status {
+    margin-top: 10px;
+    color: red;
+    min-height: 32px;
+    white-space: normal;
+}

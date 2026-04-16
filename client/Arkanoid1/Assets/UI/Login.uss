@@ -15,6 +15,22 @@
     unity-text-align: middle-center;
 }
 
+.registerRow {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    margin-top: 14px;
+}
+
+.registerPrompt {
+    margin-right: 6px;
+    color: #444;
+}
+
+.registerButton {
+    font-size: 12px;
+}
+
 .status {
     margin-top: 10px;
     color: red;

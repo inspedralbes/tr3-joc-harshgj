@@ -1,5 +1,9 @@
 using System.Collections;
 using TMPro;
+using Unity.InferenceEngine;
+using Unity.MLAgents;
+using Unity.MLAgents.Actuators;
+using Unity.MLAgents.Policies;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
@@ -43,8 +47,11 @@ public class GameManager : MonoBehaviour
     private int remainingBlocks;
     private TextMeshProUGUI gameOverText;
     private Button menuButton;
-    private const string MenuSceneName = "GameMenu";
+private const string MenuSceneName = "GameMenu";
     private const float HudButtonHeight = 52f;
+    private const string AiModelResourcePath = "Models/ArkanoidPaddle";
+    private ArkanoidAgent trainingAgent;
+    private bool hasCreatedMenuButton;
 
     void Start()
     {
@@ -57,13 +64,14 @@ public class GameManager : MonoBehaviour
         }
 
         CacheSpawnPositions();
-        selectedMode = GameModeState.SelectedMode;
+        selectedMode = IsTrainingScene() ? GameMode.AI : GameModeState.SelectedMode;
         ConfigurePaddlesForMode();
         lives = startingLives;
         UpdateLivesUI();
         EnsureGameOverUI();
         EnsureSeparatorLine();
-        EnsureMenuButton();
+        if (selectedMode != GameMode.AI && !IsTrainingScene())
+            EnsureMenuButton();
         remainingBlocks = CountRemainingBlocks();
         SetGameOverVisible(false);
         PositionHud();
@@ -143,7 +151,15 @@ public class GameManager : MonoBehaviour
         if (paddleObject == null)
             return;
 
+        RemoveStraySupportPaddles();
         RemoveExistingSupportPaddle();
+
+        if (IsTrainingScene())
+        {
+            ConfigureAsTrainingAgent(paddleObject);
+            return;
+        }
+
         ConfigurePrimaryPaddle();
 
         if (selectedMode == GameMode.Partner)
@@ -167,38 +183,97 @@ public class GameManager : MonoBehaviour
         }
 
         ConfigureAsLocalPaddle(paddleObject, true);
+}
+
+void ConfigureAsInferenceAgent(GameObject targetPaddle)
+    {
+        PaddleMovement paddleMovement = targetPaddle.GetComponent<PaddleMovement>();
+        if (paddleMovement != null)
+            paddleMovement.enabled = false;
+
+        ArkanoidAgent agent = targetPaddle.GetComponent<ArkanoidAgent>();
+        if (agent != null)
+        {
+            agent.enabled = false;
+            Destroy(agent);
+        }
+
+        BehaviorParameters bp = targetPaddle.GetComponent<BehaviorParameters>();
+        if (bp != null) Destroy(bp);
+
+        DecisionRequester dr = targetPaddle.GetComponent<DecisionRequester>();
+        if (dr != null) Destroy(dr);
+
+        AIPaddleController aiController = targetPaddle.GetComponent<AIPaddleController>();
+        if (aiController == null)
+            aiController = targetPaddle.AddComponent<AIPaddleController>();
+
+        aiController.enabled = true;
+        aiController.speed = aiPaddleSpeed;
+        aiController.reactionDeadZone = 0.15f;
+
+        if (ballObject != null)
+            aiController.ballTarget = ballObject.transform;
+
+        Debug.Log("AI paddle configured to follow ball");
     }
 
-    void EnsureAiSupportPaddle()
+    void ConfigureAsTrainingAgent(GameObject targetPaddle)
     {
-        if (!spawnAiPaddle || paddleObject == null || aiPaddleObject != null)
-            return;
+        PaddleMovement paddleMovement = targetPaddle.GetComponent<PaddleMovement>();
+        if (paddleMovement != null)
+            paddleMovement.enabled = false;
 
-        aiPaddleObject = Instantiate(paddleObject, paddleObject.transform.parent);
-        aiPaddleObject.name = "AIPaddle";
+        AIPaddleController aiController = targetPaddle.GetComponent<AIPaddleController>();
+        if (aiController != null)
+            aiController.enabled = false;
 
-        Vector3 startPosition = hasCachedPaddleStart ? cachedPaddleStartPosition : paddleObject.transform.position;
-        startPosition.y += aiPaddleVerticalOffset;
-        aiPaddleObject.transform.position = startPosition;
+        RemotePaddleController remoteController = targetPaddle.GetComponent<RemotePaddleController>();
+        if (remoteController != null)
+            remoteController.enabled = false;
 
-        PaddleMovement supportMovement = aiPaddleObject.GetComponent<PaddleMovement>();
-        if (supportMovement != null)
-            Destroy(supportMovement);
+        LocalPaddleNetworkSync networkSync = targetPaddle.GetComponent<LocalPaddleNetworkSync>();
+        if (networkSync != null)
+            networkSync.enabled = false;
 
-        AIPaddleController aiController = aiPaddleObject.GetComponent<AIPaddleController>();
-        if (aiController == null)
-            aiController = aiPaddleObject.AddComponent<AIPaddleController>();
+        BehaviorParameters behaviorParameters = targetPaddle.GetComponent<BehaviorParameters>();
+        if (behaviorParameters == null)
+            behaviorParameters = targetPaddle.AddComponent<BehaviorParameters>();
 
-        aiController.ballTarget = ballObject != null ? ballObject.transform : null;
-        aiController.speed = aiPaddleSpeed;
-        aiController.enabled = true;
+        DecisionRequester decisionRequester = targetPaddle.GetComponent<DecisionRequester>();
+        if (decisionRequester == null)
+            decisionRequester = targetPaddle.AddComponent<DecisionRequester>();
 
-        SpriteRenderer aiRenderer = aiPaddleObject.GetComponent<SpriteRenderer>();
-        if (aiRenderer != null)
-            aiRenderer.color = new Color(1f, 0.85f, 0.2f, 1f);
+        behaviorParameters.BehaviorName = "ArkanoidPaddle";
+        behaviorParameters.Model = null;
+        behaviorParameters.BehaviorType = BehaviorType.Default;
+        behaviorParameters.UseChildSensors = false;
+        behaviorParameters.UseChildActuators = false;
+        behaviorParameters.BrainParameters.VectorObservationSize = 5;
+        behaviorParameters.BrainParameters.NumStackedVectorObservations = 1;
+        behaviorParameters.BrainParameters.ActionSpec = ActionSpec.MakeDiscrete(3);
+        behaviorParameters.DeterministicInference = false;
 
-        cachedAiPaddleStartPosition = aiPaddleObject.transform.position;
-        hasCachedAiPaddleStart = true;
+        decisionRequester.DecisionPeriod = 1;
+        decisionRequester.TakeActionsBetweenDecisions = true;
+
+        trainingAgent = targetPaddle.GetComponent<ArkanoidAgent>();
+        if (trainingAgent == null)
+            trainingAgent = targetPaddle.AddComponent<ArkanoidAgent>();
+
+        trainingAgent.enabled = true;
+        trainingAgent.gameManager = this;
+        trainingAgent.trainingMode = true;
+        trainingAgent.autoFollowBall = false;
+        trainingAgent.moveSpeed = aiPaddleSpeed;
+        trainingAgent.endEpisodeOnResult = true;
+        trainingAgent.ballStart = ballStart;
+
+        if (ballObject != null)
+        {
+            trainingAgent.ball = ballObject.transform;
+            trainingAgent.ballRb = ballObject.GetComponent<Rigidbody2D>();
+        }
     }
 
     void EnsurePartnerPaddle()
@@ -227,6 +302,28 @@ public class GameManager : MonoBehaviour
         hasCachedAiPaddleStart = true;
     }
 
+    void EnsureAiSupportPaddle()
+    {
+        if (!spawnAiPaddle || paddleObject == null || aiPaddleObject != null)
+            return;
+
+        aiPaddleObject = Instantiate(paddleObject, paddleObject.transform.parent);
+        aiPaddleObject.name = "AIPaddle";
+
+        Vector3 startPosition = hasCachedPaddleStart ? cachedPaddleStartPosition : paddleObject.transform.position;
+        startPosition.y += aiPaddleVerticalOffset;
+        aiPaddleObject.transform.position = startPosition;
+
+        ConfigureAsInferenceAgent(aiPaddleObject);
+
+        SpriteRenderer aiRenderer = aiPaddleObject.GetComponent<SpriteRenderer>();
+        if (aiRenderer != null)
+            aiRenderer.color = new Color(1f, 0.85f, 0.2f, 1f);
+
+        cachedAiPaddleStartPosition = aiPaddleObject.transform.position;
+        hasCachedAiPaddleStart = true;
+    }
+
     void ConfigureAsLocalPaddle(GameObject targetPaddle, bool isLocal)
     {
         PaddleMovement paddleMovement = targetPaddle.GetComponent<PaddleMovement>();
@@ -238,6 +335,10 @@ public class GameManager : MonoBehaviour
         AIPaddleController aiController = targetPaddle.GetComponent<AIPaddleController>();
         if (aiController != null)
             aiController.enabled = false;
+
+        ArkanoidAgent agent = targetPaddle.GetComponent<ArkanoidAgent>();
+        if (agent != null)
+            agent.enabled = false;
 
         RemotePaddleController remoteController = targetPaddle.GetComponent<RemotePaddleController>();
         if (remoteController != null)
@@ -267,6 +368,10 @@ public class GameManager : MonoBehaviour
         if (aiController != null)
             aiController.enabled = false;
 
+        ArkanoidAgent agent = targetPaddle.GetComponent<ArkanoidAgent>();
+        if (agent != null)
+            agent.enabled = false;
+
         LocalPaddleNetworkSync networkSync = targetPaddle.GetComponent<LocalPaddleNetworkSync>();
         if (networkSync != null)
             networkSync.enabled = false;
@@ -286,7 +391,21 @@ public class GameManager : MonoBehaviour
             aiPaddleObject = null;
         }
 
+        trainingAgent = null;
         hasCachedAiPaddleStart = false;
+    }
+
+    void RemoveStraySupportPaddles()
+    {
+        GameObject[] supportPaddles = FindObjectsByType<GameObject>(FindObjectsSortMode.None);
+        foreach (GameObject candidate in supportPaddles)
+        {
+            if (candidate == null || candidate == paddleObject)
+                continue;
+
+            if (candidate.name == "AIPaddle" || candidate.name == "PartnerPaddle")
+                Destroy(candidate);
+        }
     }
 
     void CacheSpawnPositions()
@@ -360,7 +479,7 @@ public class GameManager : MonoBehaviour
         if (isGameOver)
             return;
 
-        remainingBlocks = Mathf.Max(0, remainingBlocks - 1);
+        remainingBlocks = CountRemainingBlocks();
         if (remainingBlocks == 0)
             CompleteLevel();
     }
@@ -369,6 +488,8 @@ public class GameManager : MonoBehaviour
     {
         isGameOver = true;
         FreezeBall(true);
+        if (selectedMode == GameMode.AI && trainingAgent != null)
+            trainingAgent.NotifyLevelCleared();
         SetGameOverMessage("GAME OVER");
         SetGameOverVisible(true);
     }
@@ -392,8 +513,25 @@ public class GameManager : MonoBehaviour
 
     void UpdateLivesUI()
     {
+        if (selectedMode == GameMode.AI || IsTrainingScene())
+        {
+            if (livesText != null)
+                livesText.gameObject.SetActive(false);
+
+            if (separatorLine != null)
+                separatorLine.gameObject.SetActive(false);
+
+            return;
+        }
+
         if (livesText != null)
+        {
+            livesText.gameObject.SetActive(true);
             livesText.text = "Lives: " + lives;
+        }
+
+        if (separatorLine != null)
+            separatorLine.gameObject.SetActive(true);
     }
 
     void ResetRound()
@@ -443,26 +581,26 @@ public class GameManager : MonoBehaviour
 
     void PositionHud()
     {
-        if (livesText == null)
-            return;
-
-        Canvas canvas = livesText.canvas;
+        Canvas canvas = GetHudCanvas();
         if (canvas == null)
             return;
 
         EnsureCanvasInteractionSupport(canvas);
 
         RectTransform canvasRect = canvas.GetComponent<RectTransform>();
-        RectTransform livesRect = livesText.rectTransform;
         float hudMarginX = Mathf.Max(24f, canvasRect.rect.width * 0.04f);
         float hudMarginY = Mathf.Max(24f, canvasRect.rect.height * 0.04f);
 
-        livesRect.anchorMin = new Vector2(0f, 1f);
-        livesRect.anchorMax = new Vector2(0f, 1f);
-        livesRect.pivot = new Vector2(0f, 1f);
-        livesRect.anchoredPosition = new Vector2(hudMarginX, -hudMarginY);
-        livesRect.sizeDelta = new Vector2(Mathf.Max(220f, canvasRect.rect.width * 0.25f), HudButtonHeight);
-        livesText.alignment = TextAlignmentOptions.MidlineLeft;
+        if (livesText != null)
+        {
+            RectTransform livesRect = livesText.rectTransform;
+            livesRect.anchorMin = new Vector2(0f, 1f);
+            livesRect.anchorMax = new Vector2(0f, 1f);
+            livesRect.pivot = new Vector2(0f, 1f);
+            livesRect.anchoredPosition = new Vector2(hudMarginX, -hudMarginY);
+            livesRect.sizeDelta = new Vector2(Mathf.Max(220f, canvasRect.rect.width * 0.25f), HudButtonHeight);
+            livesText.alignment = TextAlignmentOptions.MidlineLeft;
+        }
 
         if (separatorLine != null)
         {
@@ -572,12 +710,12 @@ public class GameManager : MonoBehaviour
             gameOverText.text = message;
     }
 
-    void EnsureMenuButton()
+void EnsureMenuButton()
     {
-        if (livesText == null)
+        if (hasCreatedMenuButton)
             return;
 
-        Canvas canvas = livesText.canvas;
+        Canvas canvas = GetHudCanvas();
         if (canvas == null)
             return;
 
@@ -588,9 +726,13 @@ public class GameManager : MonoBehaviour
             menuButton = existingButton.GetComponent<Button>();
             if (menuButton != null)
             {
+                menuButton.gameObject.SetActive(true);
                 menuButton.onClick.RemoveListener(ReturnToMenu);
                 menuButton.onClick.AddListener(ReturnToMenu);
-            }
+                menuButton.transform.SetAsLastSibling();
+PositionMenuButton(canvas);
+        hasCreatedMenuButton = true;
+    }
             return;
         }
 
@@ -598,16 +740,20 @@ public class GameManager : MonoBehaviour
 
         GameObject buttonObject = new GameObject("MenuButton", typeof(RectTransform), typeof(Image), typeof(Button));
         buttonObject.transform.SetParent(canvas.transform, false);
+        buttonObject.layer = canvas.gameObject.layer;
 
         Image buttonImage = buttonObject.GetComponent<Image>();
         buttonImage.color = new Color(0.08f, 0.08f, 0.08f, 0.92f);
 
         menuButton = buttonObject.GetComponent<Button>();
+        menuButton.gameObject.SetActive(true);
         menuButton.targetGraphic = buttonImage;
         menuButton.onClick.AddListener(ReturnToMenu);
+        menuButton.transform.SetAsLastSibling();
 
         GameObject labelObject = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
         labelObject.transform.SetParent(buttonObject.transform, false);
+        labelObject.layer = canvas.gameObject.layer;
 
         RectTransform labelRect = labelObject.GetComponent<RectTransform>();
         labelRect.anchorMin = Vector2.zero;
@@ -621,6 +767,33 @@ public class GameManager : MonoBehaviour
         label.alignment = TextAlignmentOptions.Center;
         label.color = Color.white;
         label.raycastTarget = false;
+
+        PositionMenuButton(canvas);
+    }
+
+    Canvas GetHudCanvas()
+    {
+        if (livesText != null && livesText.canvas != null)
+            return livesText.canvas;
+
+        return FindFirstObjectByType<Canvas>();
+    }
+
+    void PositionMenuButton(Canvas canvas)
+    {
+        if (menuButton == null || canvas == null)
+            return;
+
+        RectTransform canvasRect = canvas.GetComponent<RectTransform>();
+        RectTransform menuRect = menuButton.GetComponent<RectTransform>();
+        float hudMarginX = Mathf.Max(24f, canvasRect.rect.width * 0.04f);
+        float hudMarginY = Mathf.Max(24f, canvasRect.rect.height * 0.04f);
+
+        menuRect.anchorMin = new Vector2(1f, 1f);
+        menuRect.anchorMax = new Vector2(1f, 1f);
+        menuRect.pivot = new Vector2(1f, 1f);
+        menuRect.anchoredPosition = new Vector2(-hudMarginX, -hudMarginY);
+        menuRect.sizeDelta = new Vector2(150f, HudButtonHeight);
     }
 
     void EnsureEventSystem()
@@ -660,8 +833,33 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene(MenuSceneName);
     }
 
+    public void NotifyTrainingBallLost()
+    {
+        if ((selectedMode == GameMode.AI || IsTrainingScene()) && trainingAgent != null)
+            trainingAgent.NotifyBallLost();
+    }
+
+    public void NotifyTrainingBlockDestroyed()
+    {
+        if ((selectedMode == GameMode.AI || IsTrainingScene()) && trainingAgent != null)
+            trainingAgent.NotifyBlockBroken();
+    }
+
+    public void ResetTrainingEpisode()
+    {
+        if (selectedMode != GameMode.AI)
+            return;
+
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
     int CountRemainingBlocks()
     {
         return GameObject.FindGameObjectsWithTag("Block").Length;
+    }
+
+    bool IsTrainingScene()
+    {
+        return SceneManager.GetActiveScene().name == "TrainingScene";
     }
 }

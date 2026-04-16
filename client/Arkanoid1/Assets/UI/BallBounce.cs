@@ -81,6 +81,10 @@ public class Ball : MonoBehaviour
 
     void BounceFromPaddle(Collision2D collision)
     {
+        ArkanoidAgent agent = collision.gameObject.GetComponent<ArkanoidAgent>();
+        if (agent != null)
+            agent.NotifyPaddleHit();
+
         float paddleHalfWidth = collision.collider.bounds.extents.x;
         float hitOffset = transform.position.x - collision.transform.position.x;
         float normalizedOffset = paddleHalfWidth > 0f ? hitOffset / paddleHalfWidth : 0f;
