@@ -5,27 +5,29 @@
     xmlns:uie="UnityEditor.UIElements"
     xsi:noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd">
 
-    <!-- Root container -->
-    <ui:VisualElement name="loginContainer" class="container">
+    <ui:VisualElement name="loginContainer" class="loginContainer">
         
-        <!-- Title -->
-        <ui:Label text="Login" class="title" />
+        <ui:Label text="🎮 ARKANOID 🎮" class="titleLabel" />
+        <ui:Label text="🌟 Let's Play! 🌟" class="subtitleLabel" />
 
-        <!-- Username input -->
-        <ui:TextField name="usernameField" label="Username" />
-
-        <!-- Password input -->
-        <ui:TextField name="passwordField" label="Password" password="true" />
-
-        <ui:Button name="loginButton" text="Login" />
-
-        <ui:VisualElement class="registerRow">
-            <ui:Label text="New user?" class="registerPrompt" />
-            <ui:Button name="registerButton" text="Register here" class="registerButton" />
+        <ui:VisualElement class="inputContainer">
+            <ui:Label text="👤 Username" class="inputLabel" />
+            <ui:TextField name="usernameField" class="inputField" />
         </ui:VisualElement>
-
-        <!-- Status label -->
-        <ui:Label name="statusLabel" text="" class="status" />
-
+        
+        <ui:VisualElement class="inputContainer">
+            <ui:Label text="🔑 Password" class="inputLabel" />
+            <ui:TextField name="passwordField" password="true" class="inputField" />
+        </ui:VisualElement>
+        
+        <ui:Button name="loginButton" text="🚀 START GAME 🚀" class="loginButton" />
+        
+        <ui:VisualElement class="registerRow">
+            <ui:Label text="New here?" class="registerPrompt" />
+            <ui:Button name="registerButton" text="🎉 Register 🎉" class="registerButton" />
+        </ui:VisualElement>
+        
+        <ui:Label name="statusLabel" text="" class="statusLabel" />
+        
     </ui:VisualElement>
 </ui:UXML>

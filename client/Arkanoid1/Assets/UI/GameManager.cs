@@ -70,8 +70,7 @@ private const string MenuSceneName = "GameMenu";
         UpdateLivesUI();
         EnsureGameOverUI();
         EnsureSeparatorLine();
-        if (selectedMode != GameMode.AI && !IsTrainingScene())
-            EnsureMenuButton();
+        EnsureMenuButton();
         remainingBlocks = CountRemainingBlocks();
         SetGameOverVisible(false);
         PositionHud();
@@ -513,17 +512,6 @@ void ConfigureAsInferenceAgent(GameObject targetPaddle)
 
     void UpdateLivesUI()
     {
-        if (selectedMode == GameMode.AI || IsTrainingScene())
-        {
-            if (livesText != null)
-                livesText.gameObject.SetActive(false);
-
-            if (separatorLine != null)
-                separatorLine.gameObject.SetActive(false);
-
-            return;
-        }
-
         if (livesText != null)
         {
             livesText.gameObject.SetActive(true);
@@ -588,8 +576,12 @@ void ConfigureAsInferenceAgent(GameObject targetPaddle)
         EnsureCanvasInteractionSupport(canvas);
 
         RectTransform canvasRect = canvas.GetComponent<RectTransform>();
-        float hudMarginX = Mathf.Max(24f, canvasRect.rect.width * 0.04f);
-        float hudMarginY = Mathf.Max(24f, canvasRect.rect.height * 0.04f);
+        float canvasWidth = canvasRect.rect.width;
+        float canvasHeight = canvasRect.rect.height;
+        float hudMarginX = canvasWidth * 0.03f;
+        float hudMarginY = canvasHeight * 0.03f;
+        float hudHeight = Mathf.Clamp(canvasHeight * 0.06f, 35f, 50f);
+        float hudWidth = Mathf.Clamp(canvasWidth * 0.25f, 150f, 250f);
 
         if (livesText != null)
         {
@@ -598,7 +590,8 @@ void ConfigureAsInferenceAgent(GameObject targetPaddle)
             livesRect.anchorMax = new Vector2(0f, 1f);
             livesRect.pivot = new Vector2(0f, 1f);
             livesRect.anchoredPosition = new Vector2(hudMarginX, -hudMarginY);
-            livesRect.sizeDelta = new Vector2(Mathf.Max(220f, canvasRect.rect.width * 0.25f), HudButtonHeight);
+            livesRect.sizeDelta = new Vector2(hudWidth, hudHeight);
+            livesText.fontSize = Mathf.RoundToInt(canvasHeight * 0.04f);
             livesText.alignment = TextAlignmentOptions.MidlineLeft;
         }
 
@@ -608,8 +601,9 @@ void ConfigureAsInferenceAgent(GameObject targetPaddle)
             lineRect.anchorMin = new Vector2(0f, 1f);
             lineRect.anchorMax = new Vector2(1f, 1f);
             lineRect.pivot = new Vector2(0.5f, 1f);
-            lineRect.offsetMin = new Vector2(0f, -hudMarginY - HudButtonHeight - 8f);
-            lineRect.offsetMax = new Vector2(0f, -hudMarginY - HudButtonHeight - 5f);
+            lineRect.offsetMin = new Vector2(0f, -hudMarginY - hudHeight - 3f);
+            lineRect.offsetMax = new Vector2(0f, -hudMarginY - hudHeight);
+            lineRect.sizeDelta = new Vector2(0f, 2f);
         }
 
         if (menuButton != null)
@@ -619,7 +613,7 @@ void ConfigureAsInferenceAgent(GameObject targetPaddle)
             menuRect.anchorMax = new Vector2(1f, 1f);
             menuRect.pivot = new Vector2(1f, 1f);
             menuRect.anchoredPosition = new Vector2(-hudMarginX, -hudMarginY);
-            menuRect.sizeDelta = new Vector2(150f, HudButtonHeight);
+            menuRect.sizeDelta = new Vector2(hudWidth * 0.5f, hudHeight);
         }
     }
 
@@ -720,6 +714,8 @@ void EnsureMenuButton()
             return;
 
         EnsureCanvasInteractionSupport(canvas);
+        RectTransform canvasRect = canvas.GetComponent<RectTransform>();
+        
         Transform existingButton = canvas.transform.Find("MenuButton");
         if (existingButton != null)
         {
@@ -758,15 +754,15 @@ PositionMenuButton(canvas);
         RectTransform labelRect = labelObject.GetComponent<RectTransform>();
         labelRect.anchorMin = Vector2.zero;
         labelRect.anchorMax = Vector2.one;
-        labelRect.offsetMin = new Vector2(10f, 6f);
-        labelRect.offsetMax = new Vector2(-10f, -6f);
+        labelRect.offsetMin = new Vector2(canvasRect.rect.width * 0.02f, canvasRect.rect.height * 0.01f);
+        labelRect.offsetMax = new Vector2(-canvasRect.rect.width * 0.02f, -canvasRect.rect.height * 0.01f);
 
         TextMeshProUGUI label = labelObject.GetComponent<TextMeshProUGUI>();
-        label.text = "Menu";
-        label.fontSize = 28f;
+        label.text = "⬅️ Menu";
         label.alignment = TextAlignmentOptions.Center;
         label.color = Color.white;
         label.raycastTarget = false;
+        label.fontSize = Mathf.Clamp(Mathf.RoundToInt(canvasRect.rect.height * 0.035f), 18, 28);
 
         PositionMenuButton(canvas);
     }
@@ -786,14 +782,17 @@ PositionMenuButton(canvas);
 
         RectTransform canvasRect = canvas.GetComponent<RectTransform>();
         RectTransform menuRect = menuButton.GetComponent<RectTransform>();
-        float hudMarginX = Mathf.Max(24f, canvasRect.rect.width * 0.04f);
-        float hudMarginY = Mathf.Max(24f, canvasRect.rect.height * 0.04f);
+        float canvasHeight = canvasRect.rect.height;
+        float hudMarginX = canvasRect.rect.width * 0.03f;
+        float hudMarginY = canvasRect.rect.height * 0.03f;
+        float buttonHeight = Mathf.Clamp(canvasHeight * 0.05f, 32f, 45f);
+        float buttonWidth = Mathf.Clamp(canvasRect.rect.width * 0.2f, 100f, 150f);
 
         menuRect.anchorMin = new Vector2(1f, 1f);
         menuRect.anchorMax = new Vector2(1f, 1f);
         menuRect.pivot = new Vector2(1f, 1f);
         menuRect.anchoredPosition = new Vector2(-hudMarginX, -hudMarginY);
-        menuRect.sizeDelta = new Vector2(150f, HudButtonHeight);
+        menuRect.sizeDelta = new Vector2(buttonWidth, buttonHeight);
     }
 
     void EnsureEventSystem()

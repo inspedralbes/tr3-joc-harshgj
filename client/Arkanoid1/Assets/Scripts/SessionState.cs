@@ -2,7 +2,7 @@ using UnityEngine.Networking;
 
 public static class SessionState
 {
-    public static string HttpBaseUrl { get; private set; } = "http://localhost:3000";
+    public static string HttpBaseUrl { get; private set; } = "http://204.168.192.187:3000";
     public static string Username { get; private set; }
     public static string SessionCookie { get; private set; }
     public static string RoomCode { get; set; }

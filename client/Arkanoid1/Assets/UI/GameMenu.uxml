@@ -1,23 +1,23 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-    <ui:VisualElement name="menuContainer" class="container">
+    <ui:VisualElement name="menuContainer" class="menuContainer">
         <ui:VisualElement name="mainMenuPanel" class="panel">
-            <ui:Label name="titleLabel" text="Arcade Control Room" class="title" />
-            <ui:Label name="subtitleLabel" text="Choose how you want to play the next match." class="subtitle" />
-            <ui:Button name="soloPlayButton" text="Play Solo" class="primaryButton" />
-            <ui:Button name="partnerPlayButton" text="Play with Partner" class="primaryButton" />
-            <ui:Button name="aiPlayButton" text="Play with AI" class="primaryButton" />
-            <ui:Button name="backButton" text="Back To Login" class="secondaryButton" />
+            <ui:Label name="titleLabel" text="🎮 ARKANOID 🎮" class="titleLabel" />
+            <ui:Label name="subtitleLabel" text="Choose your adventure!" class="subtitleLabel" />
+            <ui:Button name="soloPlayButton" text="⚡ Solo Mode" class="primaryButton" />
+            <ui:Button name="partnerPlayButton" text="👥 With Friend" class="primaryButton" />
+            <ui:Button name="aiPlayButton" text="🤖 With AI" class="primaryButton" />
+            <ui:Button name="backButton" text="⬅️ Login" class="secondaryButton" />
         </ui:VisualElement>
 
         <ui:VisualElement name="partnerLobbyPanel" class="panel hiddenPanel">
-            <ui:Label text="Partner Lobby" class="title" />
-            <ui:Label name="partnerSubtitleLabel" text="Create a room or join with a room code from another account." class="subtitle" />
-            <ui:Button name="createRoomButton" text="Create Room" class="primaryButton" />
-            <ui:Label name="roomCodeLabel" text="Room code: -" class="roomCodeLabel" />
-            <ui:TextField name="roomCodeField" label="Room Code" class="roomCodeField" />
-            <ui:Button name="joinRoomButton" text="Join Room" class="primaryButton" />
-            <ui:Label name="partnerStatusLabel" text="Waiting for room action." class="statusLabel" />
-            <ui:Button name="partnerBackButton" text="Back To Modes" class="secondaryButton" />
+            <ui:Label text="👥 Partner Lobby" class="partnerTitle" />
+            <ui:Label name="partnerSubtitleLabel" text="Play together!" class="partnerSubtitleLabel" />
+            <ui:Button name="createRoomButton" text="➕ Create Room" class="primaryButton createRoomButton" />
+            <ui:Label name="roomCodeLabel" text="Room Code" class="roomCodeLabel" />
+            <ui:TextField name="roomCodeField" class="roomCodeField" />
+            <ui:Button name="joinRoomButton" text="🚪 Join Room" class="primaryButton joinRoomButton" />
+            <ui:Label name="partnerStatusLabel" text="Ready to play!" class="statusLabel" />
+            <ui:Button name="partnerBackButton" text="⬅️ Back" class="secondaryButton" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

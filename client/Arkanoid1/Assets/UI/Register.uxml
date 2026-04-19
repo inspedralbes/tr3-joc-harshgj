@@ -5,16 +5,30 @@
     xmlns:uie="UnityEditor.UIElements"
     xsi:noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd">
 
-    <ui:VisualElement name="registerContainer" class="container">
-        <ui:Label text="Register" class="title" />
+    <ui:VisualElement name="registerContainer" class="registerContainer">
+        
+        <ui:Label text="⭐ NEW PLAYER ⭐" class="titleLabel" />
+        <ui:Label text="Join the fun!" class="subtitleLabel" />
 
-        <ui:TextField name="usernameField" label="Username" />
-        <ui:TextField name="passwordField" label="Password" password="true" />
-        <ui:TextField name="confirmPasswordField" label="Confirm Password" password="true" />
-
-        <ui:Button name="registerButton" text="Create Account" />
-        <ui:Button name="backButton" text="Back to Login" class="backButton" />
-
-        <ui:Label name="statusLabel" text="" class="status" />
+        <ui:VisualElement class="inputContainer">
+            <ui:Label text="👤 Username" class="inputLabel" />
+            <ui:TextField name="usernameField" class="inputField" />
+        </ui:VisualElement>
+        
+        <ui:VisualElement class="inputContainer">
+            <ui:Label text="🔐 Password" class="inputLabel" />
+            <ui:TextField name="passwordField" password="true" class="inputField" />
+        </ui:VisualElement>
+        
+        <ui:VisualElement class="inputContainer">
+            <ui:Label text="🔐 Confirm Password" class="inputLabel" />
+            <ui:TextField name="confirmPasswordField" password="true" class="inputField" />
+        </ui:VisualElement>
+        
+        <ui:Button name="registerButton" text="🎊 CREATE ACCOUNT 🎊" class="registerButton" />
+        <ui:Button name="backButton" text="⬅️ Back to Login" class="backButton" />
+        
+        <ui:Label name="statusLabel" text="" class="statusLabel" />
+        
     </ui:VisualElement>
 </ui:UXML>
