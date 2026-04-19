@@ -1,13 +1,13 @@
-require('dotenv').config();
+import 'dotenv/config';
 
-const bcrypt = require('bcryptjs');
-const signature = require('cookie-signature');
-const cors = require('cors');
-const express = require('express');
-const http = require('http');
-const session = require('express-session');
-const WebSocket = require('ws');
-const { Sequelize, DataTypes } = require('sequelize');
+import bcrypt from 'bcryptjs';
+import signature from 'cookie-signature';
+import cors from 'cors';
+import express from 'express';
+import http from 'http';
+import session from 'express-session';
+import WebSocket from 'ws';
+import { Sequelize, DataTypes } from 'sequelize';
 
 const sequelize = new Sequelize(
   process.env.DB_NAME || 'authdb',
