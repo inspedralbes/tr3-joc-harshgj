@@ -11,6 +11,7 @@ public class PaddleMovement : MonoBehaviour
     public float speed = 10f;
     public float touchFollowSpeed = 25f;
     public float edgePadding = 0.2f;
+    public bool allowPointerInput = true;
 
     private Camera mainCamera;
     private Collider2D paddleCollider;
@@ -28,14 +29,14 @@ public class PaddleMovement : MonoBehaviour
 
         bool usingTouch = false;
 
-        if (Input.touchCount > 0)
+        if (allowPointerInput && Input.touchCount > 0)
         {
             Touch touch = Input.GetTouch(0);
             Vector3 touchWorld = mainCamera.ScreenToWorldPoint(new Vector3(touch.position.x, touch.position.y, -mainCamera.transform.position.z));
             targetX = touchWorld.x;
             usingTouch = true;
         }
-        else if (Input.GetMouseButton(0) && !Application.isMobilePlatform)
+        else if (allowPointerInput && Input.GetMouseButton(0) && !Application.isMobilePlatform)
         {
             Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, -mainCamera.transform.position.z));
             targetX = mouseWorld.x;

@@ -28,6 +28,7 @@ public class GameManager : MonoBehaviour
     public Transform paddleStart;
     public bool spawnAiPaddle = true;
     public float aiPaddleVerticalOffset = -0.7f;
+    public float trainingUserPaddleVerticalOffset = 0.7f;
     public float aiPaddleSpeed = 13f;
 
     private int lives;
@@ -47,9 +48,9 @@ public class GameManager : MonoBehaviour
     private int remainingBlocks;
     private TextMeshProUGUI gameOverText;
     private Button menuButton;
-private const string MenuSceneName = "GameMenu";
+    private const string MenuSceneName = "GameMenu";
     private const float HudButtonHeight = 52f;
-    private const string AiModelResourcePath = "Models/ArkanoidPaddle";
+    private const string AiModelResourcePath = "Models/finalpaddle";
     private ArkanoidAgent trainingAgent;
     private bool hasCreatedMenuButton;
 
@@ -80,6 +81,9 @@ private const string MenuSceneName = "GameMenu";
     void Update()
     {
         if (isGameOver || isRespawning || ballLossHandled || ballObject == null)
+            return;
+
+        if (IsTrainingScene())
             return;
 
         if (deathZoneCollider == null)
@@ -156,6 +160,7 @@ private const string MenuSceneName = "GameMenu";
         if (IsTrainingScene())
         {
             ConfigureAsTrainingAgent(paddleObject);
+            EnsureTrainingUserPaddle();
             return;
         }
 
@@ -190,31 +195,88 @@ void ConfigureAsInferenceAgent(GameObject targetPaddle)
         if (paddleMovement != null)
             paddleMovement.enabled = false;
 
-        ArkanoidAgent agent = targetPaddle.GetComponent<ArkanoidAgent>();
-        if (agent != null)
+        AIPaddleController aiController = targetPaddle.GetComponent<AIPaddleController>();
+        if (aiController != null)
+            aiController.enabled = false;
+
+        RemotePaddleController remoteController = targetPaddle.GetComponent<RemotePaddleController>();
+        if (remoteController != null)
+            remoteController.enabled = false;
+
+        LocalPaddleNetworkSync networkSync = targetPaddle.GetComponent<LocalPaddleNetworkSync>();
+        if (networkSync != null)
+            networkSync.enabled = false;
+
+        BehaviorParameters behaviorParameters = targetPaddle.GetComponent<BehaviorParameters>();
+        bool createdBehaviorParameters = false;
+        if (behaviorParameters == null)
         {
-            agent.enabled = false;
-            Destroy(agent);
+            behaviorParameters = targetPaddle.AddComponent<BehaviorParameters>();
+            createdBehaviorParameters = true;
         }
 
-        BehaviorParameters bp = targetPaddle.GetComponent<BehaviorParameters>();
-        if (bp != null) Destroy(bp);
+        DecisionRequester decisionRequester = targetPaddle.GetComponent<DecisionRequester>();
+        if (decisionRequester == null)
+            decisionRequester = targetPaddle.AddComponent<DecisionRequester>();
 
-        DecisionRequester dr = targetPaddle.GetComponent<DecisionRequester>();
-        if (dr != null) Destroy(dr);
+        ArkanoidAgent agent = targetPaddle.GetComponent<ArkanoidAgent>();
+        if (agent == null)
+            agent = targetPaddle.AddComponent<ArkanoidAgent>();
 
-        AIPaddleController aiController = targetPaddle.GetComponent<AIPaddleController>();
-        if (aiController == null)
-            aiController = targetPaddle.AddComponent<AIPaddleController>();
+        ModelAsset inferenceModel = LoadInferenceModel();
+        if (inferenceModel == null)
+        {
+            Debug.LogError($"Could not load AI model from Resources/{AiModelResourcePath}. Make sure Unity has imported finalpaddle.onnx as a ModelAsset.");
+            return;
+        }
 
-        aiController.enabled = true;
-        aiController.speed = aiPaddleSpeed;
-        aiController.reactionDeadZone = 0.15f;
+        behaviorParameters.BehaviorName = "ArkanoidPaddle";
+        behaviorParameters.Model = inferenceModel;
+        behaviorParameters.BehaviorType = BehaviorType.InferenceOnly;
+        behaviorParameters.UseChildSensors = false;
+        behaviorParameters.UseChildActuators = false;
+        behaviorParameters.BrainParameters.VectorObservationSize = 5;
+        behaviorParameters.BrainParameters.NumStackedVectorObservations = 1;
+        behaviorParameters.BrainParameters.ActionSpec = ActionSpec.MakeDiscrete(3);
+        behaviorParameters.DeterministicInference = false;
+        behaviorParameters.enabled = true;
+
+        decisionRequester.DecisionPeriod = 1;
+        decisionRequester.TakeActionsBetweenDecisions = true;
+        decisionRequester.enabled = true;
+
+        agent.enabled = true;
+        agent.gameManager = this;
+        agent.trainingMode = false;
+        agent.autoFollowBall = false;
+        agent.moveSpeed = aiPaddleSpeed;
+        agent.endEpisodeOnResult = false;
+        agent.ballStart = ballStart;
 
         if (ballObject != null)
-            aiController.ballTarget = ballObject.transform;
+        {
+            agent.ball = ballObject.transform;
+            agent.ballRb = ballObject.GetComponent<Rigidbody2D>();
+        }
 
-        Debug.Log("AI paddle configured to follow ball");
+        trainingAgent = agent;
+        Debug.Log("AI paddle configured for ONNX inference with finalpaddle.onnx");
+    }
+
+    ModelAsset LoadInferenceModel()
+    {
+        ModelAsset model = Resources.Load<ModelAsset>(AiModelResourcePath);
+        if (model != null)
+            return model;
+
+        ModelAsset[] models = Resources.LoadAll<ModelAsset>("Models");
+        foreach (ModelAsset candidate in models)
+        {
+            if (candidate != null)
+                return candidate;
+        }
+
+        return null;
     }
 
     void ConfigureAsTrainingAgent(GameObject targetPaddle)
@@ -236,22 +298,29 @@ void ConfigureAsInferenceAgent(GameObject targetPaddle)
             networkSync.enabled = false;
 
         BehaviorParameters behaviorParameters = targetPaddle.GetComponent<BehaviorParameters>();
+        bool createdBehaviorParameters = false;
         if (behaviorParameters == null)
+        {
             behaviorParameters = targetPaddle.AddComponent<BehaviorParameters>();
+            createdBehaviorParameters = true;
+        }
 
         DecisionRequester decisionRequester = targetPaddle.GetComponent<DecisionRequester>();
         if (decisionRequester == null)
             decisionRequester = targetPaddle.AddComponent<DecisionRequester>();
 
-        behaviorParameters.BehaviorName = "ArkanoidPaddle";
-        behaviorParameters.Model = null;
-        behaviorParameters.BehaviorType = BehaviorType.Default;
-        behaviorParameters.UseChildSensors = false;
-        behaviorParameters.UseChildActuators = false;
-        behaviorParameters.BrainParameters.VectorObservationSize = 5;
-        behaviorParameters.BrainParameters.NumStackedVectorObservations = 1;
-        behaviorParameters.BrainParameters.ActionSpec = ActionSpec.MakeDiscrete(3);
-        behaviorParameters.DeterministicInference = false;
+        if (createdBehaviorParameters)
+        {
+            behaviorParameters.BehaviorName = "ArkanoidPaddle";
+            behaviorParameters.Model = null;
+            behaviorParameters.BehaviorType = BehaviorType.HeuristicOnly;
+            behaviorParameters.UseChildSensors = false;
+            behaviorParameters.UseChildActuators = false;
+            behaviorParameters.BrainParameters.VectorObservationSize = 5;
+            behaviorParameters.BrainParameters.NumStackedVectorObservations = 1;
+            behaviorParameters.BrainParameters.ActionSpec = ActionSpec.MakeDiscrete(3);
+            behaviorParameters.DeterministicInference = false;
+        }
 
         decisionRequester.DecisionPeriod = 1;
         decisionRequester.TakeActionsBetweenDecisions = true;
@@ -307,7 +376,7 @@ void ConfigureAsInferenceAgent(GameObject targetPaddle)
             return;
 
         aiPaddleObject = Instantiate(paddleObject, paddleObject.transform.parent);
-        aiPaddleObject.name = "AIPaddle";
+        aiPaddleObject.name = "freshpaddle";
 
         Vector3 startPosition = hasCachedPaddleStart ? cachedPaddleStartPosition : paddleObject.transform.position;
         startPosition.y += aiPaddleVerticalOffset;
@@ -318,6 +387,28 @@ void ConfigureAsInferenceAgent(GameObject targetPaddle)
         SpriteRenderer aiRenderer = aiPaddleObject.GetComponent<SpriteRenderer>();
         if (aiRenderer != null)
             aiRenderer.color = new Color(1f, 0.85f, 0.2f, 1f);
+
+        cachedAiPaddleStartPosition = aiPaddleObject.transform.position;
+        hasCachedAiPaddleStart = true;
+    }
+
+    void EnsureTrainingUserPaddle()
+    {
+        if (!spawnAiPaddle || paddleObject == null || aiPaddleObject != null)
+            return;
+
+        aiPaddleObject = Instantiate(paddleObject, paddleObject.transform.parent);
+        aiPaddleObject.name = "UserPaddle";
+
+        Vector3 startPosition = hasCachedPaddleStart ? cachedPaddleStartPosition : paddleObject.transform.position;
+        startPosition.y += Mathf.Abs(trainingUserPaddleVerticalOffset);
+        aiPaddleObject.transform.position = startPosition;
+
+        ConfigureAsArrowPaddle(aiPaddleObject);
+
+        SpriteRenderer userRenderer = aiPaddleObject.GetComponent<SpriteRenderer>();
+        if (userRenderer != null)
+            userRenderer.color = new Color(0.4f, 1f, 0.45f, 1f);
 
         cachedAiPaddleStartPosition = aiPaddleObject.transform.position;
         hasCachedAiPaddleStart = true;
@@ -339,6 +430,17 @@ void ConfigureAsInferenceAgent(GameObject targetPaddle)
         if (agent != null)
             agent.enabled = false;
 
+        BehaviorParameters behaviorParameters = targetPaddle.GetComponent<BehaviorParameters>();
+        if (behaviorParameters != null)
+        {
+            behaviorParameters.Model = null;
+            behaviorParameters.enabled = false;
+        }
+
+        DecisionRequester decisionRequester = targetPaddle.GetComponent<DecisionRequester>();
+        if (decisionRequester != null)
+            decisionRequester.enabled = false;
+
         RemotePaddleController remoteController = targetPaddle.GetComponent<RemotePaddleController>();
         if (remoteController != null)
             remoteController.enabled = !isLocal;
@@ -357,6 +459,47 @@ void ConfigureAsInferenceAgent(GameObject targetPaddle)
         }
     }
 
+    void ConfigureAsArrowPaddle(GameObject targetPaddle)
+    {
+        PaddleMovement paddleMovement = targetPaddle.GetComponent<PaddleMovement>();
+        if (paddleMovement == null)
+            paddleMovement = targetPaddle.AddComponent<PaddleMovement>();
+
+        paddleMovement.enabled = true;
+        paddleMovement.allowPointerInput = false;
+        paddleMovement.moveLeftKey = KeyCode.LeftArrow;
+        paddleMovement.moveLeftAltKey = KeyCode.None;
+        paddleMovement.moveRightKey = KeyCode.RightArrow;
+        paddleMovement.moveRightAltKey = KeyCode.None;
+
+        AIPaddleController aiController = targetPaddle.GetComponent<AIPaddleController>();
+        if (aiController != null)
+            aiController.enabled = false;
+
+        ArkanoidAgent agent = targetPaddle.GetComponent<ArkanoidAgent>();
+        if (agent != null)
+            agent.enabled = false;
+
+        BehaviorParameters behaviorParameters = targetPaddle.GetComponent<BehaviorParameters>();
+        if (behaviorParameters != null)
+        {
+            behaviorParameters.Model = null;
+            behaviorParameters.enabled = false;
+        }
+
+        DecisionRequester decisionRequester = targetPaddle.GetComponent<DecisionRequester>();
+        if (decisionRequester != null)
+            decisionRequester.enabled = false;
+
+        RemotePaddleController remoteController = targetPaddle.GetComponent<RemotePaddleController>();
+        if (remoteController != null)
+            remoteController.enabled = false;
+
+        LocalPaddleNetworkSync networkSync = targetPaddle.GetComponent<LocalPaddleNetworkSync>();
+        if (networkSync != null)
+            networkSync.enabled = false;
+    }
+
     void ConfigureAsRemotePaddle(GameObject targetPaddle)
     {
         PaddleMovement paddleMovement = targetPaddle.GetComponent<PaddleMovement>();
@@ -370,6 +513,17 @@ void ConfigureAsInferenceAgent(GameObject targetPaddle)
         ArkanoidAgent agent = targetPaddle.GetComponent<ArkanoidAgent>();
         if (agent != null)
             agent.enabled = false;
+
+        BehaviorParameters behaviorParameters = targetPaddle.GetComponent<BehaviorParameters>();
+        if (behaviorParameters != null)
+        {
+            behaviorParameters.Model = null;
+            behaviorParameters.enabled = false;
+        }
+
+        DecisionRequester decisionRequester = targetPaddle.GetComponent<DecisionRequester>();
+        if (decisionRequester != null)
+            decisionRequester.enabled = false;
 
         LocalPaddleNetworkSync networkSync = targetPaddle.GetComponent<LocalPaddleNetworkSync>();
         if (networkSync != null)
@@ -402,7 +556,7 @@ void ConfigureAsInferenceAgent(GameObject targetPaddle)
             if (candidate == null || candidate == paddleObject)
                 continue;
 
-            if (candidate.name == "AIPaddle" || candidate.name == "PartnerPaddle")
+            if (candidate.name == "AIPaddle" || candidate.name == "freshpaddle" || candidate.name == "PartnerPaddle" || candidate.name == "UserPaddle")
                 Destroy(candidate);
         }
     }
@@ -443,6 +597,12 @@ void ConfigureAsInferenceAgent(GameObject targetPaddle)
         if (isGameOver || isRespawning)
             return;
 
+        if (IsTrainingScene())
+        {
+            ballLossHandled = true;
+            return;
+        }
+
         lives = Mathf.Max(0, lives - 1);
         ballLossHandled = true;
         UpdateLivesUI();
@@ -467,6 +627,9 @@ void ConfigureAsInferenceAgent(GameObject targetPaddle)
 
     void GameOver()
     {
+        if (IsTrainingScene())
+            return;
+
         isGameOver = true;
         FreezeBall(true);
         SetGameOverMessage("GAME OVER");
@@ -485,9 +648,12 @@ void ConfigureAsInferenceAgent(GameObject targetPaddle)
 
     void CompleteLevel()
     {
+        if (IsTrainingScene())
+            selectedMode = GameMode.AI;
+
         isGameOver = true;
         FreezeBall(true);
-        if (selectedMode == GameMode.AI && trainingAgent != null)
+        if ((selectedMode == GameMode.AI || IsTrainingScene()) && trainingAgent != null)
             trainingAgent.NotifyLevelCleared();
         SetGameOverMessage("GAME OVER");
         SetGameOverVisible(true);
@@ -861,4 +1027,5 @@ PositionMenuButton(canvas);
     {
         return SceneManager.GetActiveScene().name == "TrainingScene";
     }
+
 }

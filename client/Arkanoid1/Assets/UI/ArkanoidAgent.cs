@@ -52,6 +52,7 @@ public class ArkanoidAgent : Agent
     private List<Vector3> savedBlockPositions = new List<Vector3>();
     private List<Quaternion> savedBlockRotations = new List<Quaternion>();
     private int activeBlockCount;
+    private const float TrainingBallClearance = 0.35f;
 
     public override void Initialize()
     {
@@ -74,9 +75,7 @@ public class ArkanoidAgent : Agent
             aiPaddleController.enabled = false;
 
         if (trainingMode)
-        {
             Invoke(nameof(DelayedFindBlocks), 0.5f);
-        }
 
         Debug.Log($"ArkanoidAgent Initialize: trainingMode={trainingMode}, moveSpeed={moveSpeed}");
     }
@@ -162,6 +161,8 @@ public class ArkanoidAgent : Agent
 
         if (trainingMode && ball != null)
         {
+            KeepBallAbovePaddleInTraining();
+
             if (ball.position.y <= ballResetHeight && !isRespawning)
             {
                 RespawnBall();
@@ -183,6 +184,26 @@ public class ArkanoidAgent : Agent
                 EndEpisode();
             }
         }
+    }
+
+    void KeepBallAbovePaddleInTraining()
+    {
+        if (isRespawning || ball == null || ballRb == null)
+            return;
+
+        float minimumBallY = transform.position.y + TrainingBallClearance;
+        if (ball.position.y >= minimumBallY)
+            return;
+
+        Vector3 correctedPosition = ball.position;
+        correctedPosition.y = minimumBallY;
+        ball.position = correctedPosition;
+
+        Vector2 correctedVelocity = ballRb.linearVelocity;
+        correctedVelocity.y = Mathf.Abs(correctedVelocity.y);
+        if (correctedVelocity.y < 2f)
+            correctedVelocity.y = 2f;
+        ballRb.linearVelocity = correctedVelocity;
     }
 
     void RespawnBall()
@@ -225,8 +246,6 @@ public class ArkanoidAgent : Agent
         if (trainingMode)
         {
             transform.position = initialPaddlePosition;
-            activeBlockCount = blockList.Count;
-            ResetAllBlocks();
 
             if (ball != null && ballStart != null)
                 ball.position = ballStart.position;
@@ -357,29 +376,8 @@ public class ArkanoidAgent : Agent
         activeBlockCount--;
 
         if (trainingMode && activeBlockCount <= 0)
-        {
             AddReward(clearLevelReward);
-            Invoke(nameof(ResetAllBlocksAndBall), 1f);
-        }
-    }
-
-    void ResetAllBlocksAndBall()
-    {
-        activeBlockCount = blockList.Count;
-        ResetAllBlocks();
-
-        if (ball != null && ballStart != null)
-            ball.position = ballStart.position;
-
-        if (ballRb != null)
-        {
-            ballRb.linearVelocity = Vector2.zero;
-            ballRb.angularVelocity = 0f;
-        }
-
-        Ball ballScript = ball != null ? ball.GetComponent<Ball>() : null;
-        if (ballScript != null)
-            ballScript.Launch();
+        
     }
 
     public void NotifyBallLost()
@@ -400,6 +398,9 @@ public class ArkanoidAgent : Agent
     public void NotifyLevelCleared()
     {
         AddReward(clearLevelReward);
+        if (trainingMode)
+            return;
+
         if (endEpisodeOnResult)
             EndEpisode();
     }

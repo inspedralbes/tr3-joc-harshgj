@@ -15,6 +15,7 @@ public class GameMenuController : MonoBehaviour
     }
 
     private const string GameSceneName = "Final producte";
+    private const string TrainingSceneName = "TrainingScene";
     private const string LoginSceneName = "SampleScene";
 
     private VisualElement mainMenuPanel;
@@ -96,7 +97,7 @@ public class GameMenuController : MonoBehaviour
         GameModeState.SelectedMode = GameMode.AI;
         SessionState.ClearRoomState();
         _ = NetworkSessionManager.EnsureExists().DisconnectAsync();
-        SceneManager.LoadScene(GameSceneName);
+        SceneManager.LoadScene(TrainingSceneName);
     }
 
     void ShowPartnerLobby()

@@ -1,0 +1,5 @@
+=================================================
+ARKANOID MULTIPLAYER - HISTORIAL D'ACCESSOS
+=================================================
+
+Format: TIMESTAMP | USUARI | ADREÇA_IP
